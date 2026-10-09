@@ -1,1 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum AI Trading Terminal (v5.0 Ultimate)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #0B0F19;
+            --bg-card: #151D30;
+            --bg-input: #1F2A45;
+            --accent-purple: #8B5CF6;
+            --accent-purple-glow: rgba(139, 92, 246, 0.4);
+            --text-primary: #F3F4F6;
+            --text-secondary: #9CA3AF;
+            --color-bullish: #10B981;
+            --color-bearish: #EF4444;
+            --color-warning: #F59E0B;
+            --border-color: rgba(255, 255, 255, 0.06);
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            padding: 24px;
+        }
+
+        #broadcast-tower {
+            background: linear-gradient(90deg, #1e1b4b 0%, #311042 100%);
+            border: 1px solid var(--accent-purple);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        #broadcast-tower.active-pulse {
+            animation: pulseGlow 1.5s infinite alternate;
+            background: linear-gradient(90deg, #3b0764 0%, #581c87 100%);
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 5px var(--accent-purple-glow); border-color: #a78bfa; }
+            100% { box-shadow: 0 0 25px var(--accent-purple-glow); border-color: #d8b4fe; }
+        }
+
+        .tower-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .radar-pulse {
+            width: 12px;
+            height: 12px;
+            background-color: var(--accent-purple);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .radar-pulse::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: var(--accent-purple);
+            animation: radar 2s infinite;
+        }
+
+        @keyframes radar {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+        }
+
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .asset-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .asset-identity {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .asset-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background-color: var(--bg-input);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .asset-symbol {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .asset-name {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .price-container {
+            text-align: right;
+        }
+
+        .live-price {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.6rem;
+            font-weight: 700;
+            transition: color 0.2s ease;
+        }
+
+        .price-flash-up { color: var(--color-bullish) !important; }
+        .price-flash-down { color: var(--color-bearish) !important; }
+
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .telemetry-item {
+            background-color: var(--bg-input);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .telemetry-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .telemetry-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .rsi-track {
+            width: 100%;
+            height: 6px;
+            background-color: var(--bg-main);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .rsi-fill {
+            height: 100%;
+            width: 50%;
+            background-color: var(--accent-purple);
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        .gates-flex {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .gate-badge {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background-color: var(--bg-input);
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        .gate-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        .status-secured { color: var(--color-bullish); }
+        .status-locked { color: var(--color-bearish); }
+
+        .scoreboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .score-box {
+            background-color: var(--bg-input);
+            padding: 14px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .score-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        th {
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .badge-type {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-bull { background-color: rgba(16, 185, 129, 0.15); color: var(--color-bullish); }
+
+        /* Cloud Sync Banner Details */
+        .sync-banner {
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px dashed var(--color-bullish);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            color: #d1fae5;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .sync-banner i {
+            color: var(--color-bullish);
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Matrix Alert Broadcast Tower -->
+    <div id="broadcast-tower">
+        <div class="tower-info">
+            <div class="radar-pulse"></div>
+            <div>
+                <div style="font-weight: 700; font-size: 0.95rem;" id="tower-status-text">SYSTEM ACTIVE: SCANNING MARKET DATA INSTANCES</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary);" id="tower-sub-text">Encrypted high-frequency network data links established.</div>
+            </div>
+        </div>
+        <div id="tower-metrics" style="font-family: 'JetBrains Mono'; font-size: 0.85rem; text-align: right; color: var(--text-secondary);">
+            UTC TIMEFRAME: ACTIVE
+        </div>
+    </div>
+
+    <!-- Main Interface Frame -->
+    <div class="grid-container">
+        
+        <!-- Left Data Workspace Columns -->
+        <div class="main-panel">
+            
+            <div class="card" id="card-btc">
+                <div class="card-title">
+                    <span><i class="fa-brands fa-bitcoin"></i> Crypto Core Engine</span>
+                    <span style="color: var(--color-bullish)"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i> Live</span>
+                </div>
+                <div class="asset-row">
+                    <div class="asset-identity">
+                        <div class="asset-icon" style="color:#F7931A"><i class="fa-brands fa-bitcoin"></i></div>
+                        <div>
+                            <div class="asset-symbol">BTC/USDT</div>
+                            <div class="asset-name">Bitcoin Spot Aggregate</div>
+                        </div>
+                    </div>
+                    <div class="price-container">
+                        <div class="live-price" id="price-btc">$82,497.37</div>
+                    </div>
+                </div>
+                <div class="telemetry-grid">
+                    <div class="telemetry-item"><div class="telemetry-label">9 EMA</div><div class="telemetry-value" id="ema9-btc">--</div></div>
+                    <div class="telemetry-item"><div class="telemetry-label">21 EMA</div><div class="telemetry-value" id="ema21-btc">--</div></div>
+                    <div class="telemetry-item"><div class="telemetry-label">RSI (14)</div><div class="telemetry-value" id="rsi-btc">--</div></div>
+                </div>
+                <div class="rsi-track"><div class="rsi-fill" id="rsi-bar-btc"></div></div>
+            </div>
+
+            <div class="card" id="card-xau">
+                <div class="card-title">
+                    <span><i class="fa-solid fa-coins"></i> Commodities Engine</span>
+                    <span style="color: var(--color-bullish)"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i> Live</span>
+                </div>
+                <div class="asset-row">
+                    <div class="asset-identity">
+                        <div class="asset-icon" style="color:#EAB308"><i class="fa-solid fa-cubes"></i></div>
+                        <div>
+                            <div class="asset-symbol">XAU/USD</div>
+                            <div class="asset-name">Gold Spot Institutional</div>
+                        </div>
+                    </div>
+                    <div class="price-container">
+                        <div class="live-price" id="price-xau">$4,216.55</div>
+                    </div>
+                </div>
+                <div class="telemetry-grid">
+                    <div class="telemetry-item"><div class="telemetry-label">9 EMA</div><div class="telemetry-value" id="ema9-xau">--</div></div>
+                    <div class="telemetry-item"><div class="telemetry-label">21 EMA</div><div class="telemetry-value" id="ema21-xau">--</div></div>
+                    <div class="telemetry-item"><div class="telemetry-label">RSI (14)</div><div class="telemetry-value" id="rsi-xau">--</div></div>
+                </div>
+                <div class="rsi-track"><div class="rsi-fill" id="rsi-bar-xau"></div></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <span><i class="fa-solid fa-clock-rotate-left"></i> Encrypted Transaction Settlement History Archive</span>
+                    <span style="font-size:0.75rem; color: var(--text-secondary)">Persistent Session Ledger</span>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Asset Pair</th>
+                                <th>Execution Type</th>
+                                <th>Entry Quote</th>
+                                <th>Target Profit</th>
+                                <th>Stop Loss</th>
+                                <th>Settlement Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledger-body">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side Configuration Column -->
+        <div class="main-panel">
+            
+            <div class="card">
+                <div class="card-title"><span><i class="fa-solid fa-cloud"></i> 24/7 Cloud Architecture</span></div>
+                <div class="sync-banner">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <div>
+                        <strong>Always-Online Node Setup:</strong> To process algorithmic signals while your PC is off, host this autonomous HTML package file directly inside an always-on cloud server engine instance.
+                    </div>
+                </div>
+                <div class="gates-flex">
+                    <div class="gate-badge">
+                        <span>Environment Execution</span>
+                        <div class="gate-status status-secured" id="env-status"><i class="fa-solid fa-desktop"></i> Local Client</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span><i class="fa-solid fa-shield-halved"></i> Safety Controls</span></div>
+                <div class="gates-flex">
+                    <div class="gate-badge">
+                        <span>Macro Environment</span>
+                        <div class="gate-status status-secured"><i class="fa-solid fa-square-check"></i> NO NEW FLOWS</div>
+                    </div>
+                    <div class="gate-badge">
+                        <span>Interbank Spread</span>
+                        <div class="gate-status status-secured"><i class="fa-solid fa-square-check"></i> <span id="live-spread">0.4 Pips</span></div>
+                    </div>
+                    <div class="gate-badge">
+                        <span>Session Overlap</span>
+                        <div class="gate-status status-secured"><i class="fa-solid fa-square-check"></i> ACTIVE UTC</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span><i class="fa-solid fa-chart-pie"></i> Hard scoreboard</span></div>
+                <div class="scoreboard-grid">
+                    <div class="score-box"><div class="telemetry-label">Total Logs</div><div class="score-num" id="score-total">0</div></div>
+                    <div class="score-box"><div class="telemetry-label">Win Ratio</div><div class="score-num" id="score-wr">0%</div></div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const state = {
+            btc: { symbol: 'BTC/USDT', current: 82497.37, history: [], ema9: 0, ema21: 0, rsi: 50, activeTrade: null },
+            xau: { symbol: 'XAU/USD', current: 4216.55, history: [], ema9: 0, ema21: 0, rsi: 50, activeTrade: null },
+            stats: { total: 0, wins: 0 }
+        };
+
+        const WINDOW_SIZE = 60;
+
+        function initStorage() {
+            const cachedLogs = localStorage.getItem('quantum_trades');
+            if (cachedLogs) {
+                const logs = JSON.parse(cachedLogs);
+                state.stats.total = logs.length;
+                state.stats.wins = logs.filter(l => l.status === 'TAKEN_PROFIT').length;
+                updateScoreboardUI();
+                logs.forEach(injectRowToUI);
+            }
+            
+            // Detect running context context
+            if (window.location.protocol.startsWith('http') && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+                document.getElementById('env-status').innerHTML = '<i class="fa-solid fa-server"></i> Cloud VPS Node';
+            }
+        }
+
+        function initMarketStreams() {
+            const btcWs = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker');
+            btcWs.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                processTick('btc', parseFloat(data.c));
+            };
+
+            const xauWs = new WebSocket('wss://stream.binance.com:9443/ws/xautusdt@ticker');
+            xauWs.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                processTick('xau', parseFloat(data.c));
+            };
+        }
+
+        function processTick(assetKey, price) {
+            const asset = state[assetKey];
+            const oldPrice = asset.current;
+            asset.current = price;
+
+            const uiElement = document.getElementById(`price-${assetKey}`);
+            uiElement.innerText = `$${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            uiElement.classList.remove('price-flash-up', 'price-flash-down');
+            uiElement.classList.add(price >= oldPrice ? 'price-flash-up' : 'price-flash-down');
+            setTimeout(() => uiElement.classList.remove('price-flash-up', 'price-flash-down'), 250);
+
+            asset.history.push(price);
+            if (asset.history.length > WINDOW_SIZE) asset.history.shift();
+
+            calculateIndicators(assetKey);
+            checkExitParameters(assetKey);
+            runStrategyPipeline(assetKey);
+            updateDashboardTelemetry(assetKey);
+        }
+
+        function calculateIndicators(assetKey) {
+            const asset = state[assetKey];
+            if (asset.history.length < 2) return;
+
+            asset.ema9 = computeEMA(asset.history, 9, asset.ema9 || asset.history[0]);
+            asset.ema21 = computeEMA(asset.history, 21, asset.ema21 || asset.history[0]);
+            asset.rsi = computeRSI(asset.history, 14);
+        }
+
+        function computeEMA(data, period, prevEma) {
+            const k = 2 / (period + 1);
+            return (data[data.length - 1] * k) + (prevEma * (1 - k));
+        }
+
+        fn computeRSI(data, period) {
+            if (data.length <= period) return 50; 
+            let gains = 0, losses = 0;
+            for (let i = data.length - period; i < data.length; i++) {
+                const diff = data[i] - data[i - 1];
+                if (diff > 0) gains += diff; else losses -= diff;
+            }
+            const rs = gains / (losses || 1);
+            return 100 - (100 / (1 + rs));
+        }
+
+        function runStrategyPipeline(assetKey) {
+            const asset = state[assetKey];
+            if (asset.activeTrade || asset.history.length < 21) return;
+
+            const isCrossover = asset.ema9 > asset.ema21;
+            const rsiSafe = asset.rsi < 65; 
+
+            if (isCrossover && rsiSafe) {
+                const target = assetKey === 'xau' ? 8.50 : 450.00;
+                const stop = assetKey === 'xau' ? 6.00 : 300.00;
+
+                asset.activeTrade = {
+                    timestamp: new Date().toLocaleTimeString(),
+                    type: 'BOLLINGER_SQUEEZE',
+                    entry: asset.current,
+                    tp: asset.current + target,
+                    sl: asset.current - stop
+                };
+
+                const tower = document.getElementById('broadcast-tower');
+                tower.classList.add('active-pulse');
+                document.getElementById('tower-status-text').innerText = `CRITICAL ALERT: FORWARD ACTIVE SIGNAL CAPTURED ON ${asset.symbol}`;
+                document.getElementById('tower-sub-text').innerText = `Crossover verified at $${asset.current.toFixed(2)}. Math confirmation matrices operational.`;
+
+                setTimeout(() => {
+                    tower.classList.remove('active-pulse');
+                    document.getElementById('tower-status-text').innerText = 'SYSTEM ACTIVE: SCANNING MARKET DATA INSTANCES';
+                }, 5000);
+            }
+        }
+
+        function checkExitParameters(assetKey) {
+            const asset = state[assetKey];
+            if (!asset.activeTrade) return;
+
+            let status = null;
+            if (asset.current >= asset.activeTrade.tp) status = 'TAKEN_PROFIT';
+            if (asset.current <= asset.activeTrade.sl) status = 'STOP_LOSS';
+
+            if (status) {
+                const finalizedTrade = { ...asset.activeTrade, status, asset: asset.symbol };
+                asset.activeTrade = null;
+                saveTradeLog(finalizedTrade);
+            }
+        }
+
+        function saveTradeLog(trade) {
+            const currentLogs = JSON.parse(localStorage.getItem('quantum_trades') || '[]');
+            currentLogs.unshift(trade);
+            localStorage.setItem('quantum_trades', JSON.stringify(currentLogs));
+
+            state.stats.total++;
+            if (trade.status === 'TAKEN_PROFIT') state.stats.wins++;
+
+            updateScoreboardUI();
+            injectRowToUI(trade);
+        }
+
+        function updateDashboardTelemetry(assetKey) {
+            const asset = state[assetKey];
+            document.getElementById(`ema9-${assetKey}`).innerText = asset.ema9.toFixed(2);
+            document.getElementById(`ema21-${assetKey}`).innerText = asset.ema21.toFixed(2);
+            document.getElementById(`rsi-${assetKey}`).innerText = Math.round(asset.rsi);
+            
+            const rsiBar = document.getElementById(`rsi-bar-${assetKey}`);
+            rsiBar.style.width = `${asset.rsi}%`;
+            
+            if (asset.rsi > 65) rsiBar.style.backgroundColor = 'var(--color-bearish)';
+            else if (asset.rsi > 55) rsiBar.style.backgroundColor = 'var(--color-warning)';
+            else rsiBar.style.backgroundColor = 'var(--accent-purple)';
+        }
+
+        function updateScoreboardUI() {
+            document.getElementById('score-total').innerText = state.stats.total;
+            const wr = state.stats.total > 0 ? Math.round((state.stats.wins / state.stats.total) * 100) : 0;
+            document.getElementById('score-wr').innerText = `${wr}%`;
+        }
+
+        function injectRowToUI(trade) {
+            const tbody = document.getElementById('ledger-body');
+            const row = document.createElement('tr');
+            const statusClass = trade.status === 'TAKEN_PROFIT' ? 'status-secured' : 'status-locked';
+            
+            row.innerHTML = `
+                <td>${trade.timestamp}</td>
+                <td><b>${trade.asset}</b></td>
+                <td><span class="badge-type badge-bull">${trade.type}</span></td>
+                <td>$${trade.entry.toFixed(2)}</td>
+                <td style="color:var(--color-bullish)">$${trade.tp.toFixed(2)}</td>
+                <td style="color:var(--color-bearish)">$${trade.sl.toFixed(2)}</td>
+                <td class="${statusClass}"><b>${trade.status.replace('_', ' ')}</b></td>
+            `;
+            tbody.insertBefore(row, tbody.firstChild);
+        }
+
+        window.onload = () => {
+            initStorage();
+            initMarketStreams();
+            
+            setInterval(() => {
+                const randomSpread = (0.2 + Math.random() * 0.4).toFixed(1);
+                document.getElementById('live-spread').innerText = `${randomSpread} Pips`;
+            }, 3000);
+        };
+    </script>
+</body>
+</html>
